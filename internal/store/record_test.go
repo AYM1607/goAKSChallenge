@@ -35,7 +35,8 @@ func TestInvalidSchema(t *testing.T) {
 		data, err := os.ReadFile(f)
 		require.NoError(t, err)
 		_, err = newRecord(data)
-		require.Equal(t, ErrInvalidFields, err, "Record creation should field if any field is invalid")
+		require.Error(t, err, "Record creation should field if any field is invalid")
+		require.NotEqual(t, ErrUnparsable, err, "If invalid fields were found, the err should refelct that.")
 	}
 }
 
