@@ -1,6 +1,6 @@
 package api
 
-type Record struct {
+type MetaRecord struct {
 	Title   string `yaml:"title" validate:"required"`
 	Version string `yaml:"version" validate:"required"`
 	// dive tag option is necessary to validate fields in the nested struct.
