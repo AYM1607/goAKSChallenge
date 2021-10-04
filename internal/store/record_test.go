@@ -1,29 +1,27 @@
 package store
 
 import (
+	"io/ioutil"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 )
 
-var invalidFiles = []string{
-	"./testData/invalid.yaml",
-}
+var (
+	invalidDir       = "./testData/invalid"
+	invalidSchemaDir = "./testData/invalidSchema"
+	validDir         = "./testData/valid"
+)
 
-var invalidSchemaFiles = []string{
-	"./testData/missingVersion.yaml",
-	"./testData/invalidEmail.yaml",
-}
-
-var validFiles = []string{
-	"./testData/valid1.yaml",
-	"./testData/valid2.yaml",
-}
+// TODO: Convert this set of tests to a table test to delete dupe code.
 
 func TestInvalid(t *testing.T) {
-	for _, f := range invalidFiles {
-		data, err := os.ReadFile(f)
+	fis, err := ioutil.ReadDir(invalidDir)
+	require.NoError(t, err, "Test dir for invalid records doesn't exist")
+	for _, fi := range fis {
+		data, err := os.ReadFile(filepath.Join(invalidDir, fi.Name()))
 		require.NoError(t, err)
 		_, err = newRecord(data)
 		require.Equal(t, ErrUnparsable, err, "Invalid files shouldn't be able to be parsed")
@@ -31,8 +29,10 @@ func TestInvalid(t *testing.T) {
 }
 
 func TestInvalidSchema(t *testing.T) {
-	for _, f := range invalidSchemaFiles {
-		data, err := os.ReadFile(f)
+	fis, err := ioutil.ReadDir(invalidSchemaDir)
+	require.NoError(t, err, "Test dir for invalid schema records doesn't exist")
+	for _, fi := range fis {
+		data, err := os.ReadFile(filepath.Join(invalidSchemaDir, fi.Name()))
 		require.NoError(t, err)
 		_, err = newRecord(data)
 		require.Error(t, err, "Record creation should field if any field is invalid")
@@ -41,8 +41,10 @@ func TestInvalidSchema(t *testing.T) {
 }
 
 func TestValid(t *testing.T) {
-	for _, f := range validFiles {
-		data, err := os.ReadFile(f)
+	fis, err := ioutil.ReadDir(validDir)
+	require.NoError(t, err, "Test dir for valid records doesn't exist")
+	for _, fi := range fis {
+		data, err := os.ReadFile(filepath.Join(validDir, fi.Name()))
 		require.NoError(t, err)
 		_, err = newRecord(data)
 		require.NoError(t, err, "Valid files should be parsed correctly")
