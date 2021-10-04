@@ -1,6 +1,8 @@
 package api
 
+type searchField uint8
+
 type SearchTerm struct {
-	Field string
-	Query string
+	Field string `json:"field"`
+	Query string `json:"query"`
 }
