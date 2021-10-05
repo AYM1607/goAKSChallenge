@@ -42,6 +42,18 @@ func (s *Store) Append(rawRecord []byte) error {
 	return nil
 }
 
+func (s *Store) Search(joinMethod api.SearchJoinMethod,
+	terms []api.SearchTerm) ([]api.MetaRecord, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	if len(terms) == 0 {
+		return nil, errors.New("at least one search term must be provided")
+	}
+
+	return nil, nil
+}
+
 // TODO: Perhaps the record logic should be moved to its own file to separate concerns.
 
 // newRecord creates a new record from a raw stream of bytes.
