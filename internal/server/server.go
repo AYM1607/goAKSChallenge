@@ -121,7 +121,6 @@ func (h *handler) handleSearch(w http.ResponseWriter, r *http.Request) {
 	}
 
 	records, err := h.Store.Search(req.JoinMethod, req.SearchTerms)
-
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -130,7 +129,7 @@ func (h *handler) handleSearch(w http.ResponseWriter, r *http.Request) {
 	rawRecords := []string{}
 	for _, record := range records {
 
-		rawRecord, err := yaml.Marshal(&record)
+		rawRecord, err := yaml.Marshal(record)
 		// Since all records where unmarshalled from valid yaml this should not
 		// happen but leaving it as a safeguard.
 		if err != nil {

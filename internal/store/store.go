@@ -2,18 +2,12 @@ package store
 
 import (
 	"errors"
-	"fmt"
-	"strings"
 	"sync"
 
 	"github.com/AYM1607/goAKSChallenge/api"
-	"github.com/go-playground/validator/v10"
-	"github.com/goccy/go-yaml"
 )
 
 // TODO: create an index to have fast search for fields.
-
-var validate = validator.New()
 
 var ErrUnparsable = errors.New("could not parse input into a record")
 
@@ -43,7 +37,7 @@ func (s *Store) Append(rawRecord []byte) error {
 }
 
 func (s *Store) Search(joinMethod api.SearchJoinMethod,
-	terms []api.SearchTerm) ([]api.MetaRecord, error) {
+	terms []api.SearchTerm) ([]*api.MetaRecord, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 

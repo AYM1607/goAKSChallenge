@@ -100,3 +100,5 @@ description: |
 
 - [go-yaml](https://github.com/goccy/go-yaml) to parse the yaml payloads.
 - [gorilla mux](https://github.com/gorilla/mux) as the http router.
+- [bleve](https://github.com/blevesearch/bleve) as a full text search index implemented in go (only used to search through the description).
+- [ulid](https://github.com/oklog/ulid) for internal indexing purposes.
