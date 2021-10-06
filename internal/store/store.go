@@ -89,20 +89,65 @@ func (s *Store) Search(joinMethod api.SearchJoinMethod,
 		return nil, errors.New("at least one search term must be provided")
 	}
 
+	// Used to keep track of how many times a record has shown up in term searches.
+	foundRecordsCounts := map[*api.MetaRecord]int{}
 	results := []*api.MetaRecord{}
-	// TODO: deduplicate for "or" join method and ensure that a result is returned
-	// for each of the terms in the case of the "and" join method.
+
+	// Results returned from individual index searches.
+	indexesQueryResults := make(chan []*api.MetaRecord)
+
+	// Goroutines sync.
+	done := make(chan bool)
+	wg := sync.WaitGroup{}
+	wg.Add(len(terms))
+
 	for _, term := range terms {
-		// TODO: this searches should be performed concurrently.
-		// Skipping indexes for fields other than description for now.
-		index := s.indexes[term.Field]
-		indexResults, err := index.Search(term.Query)
-		// NOTE: We could argue on whether an error from a single index should fail the entire operation.
-		// For the purposes of this challenge I'll allow the operation to proceed just in aces other
-		// indices are able to return valid results.
-		if err == nil {
-			results = append(results, indexResults...)
+		go func(term api.SearchTerm) {
+			index := s.indexes[term.Field]
+			indexQueryResult, err := index.Search(term.Query)
+			// NOTE: We could argue on whether an error from a single index should fail the entire operation.
+			// For the purposes of this challenge I'll allow the operation to proceed just in aces other
+			// indexes are able to return valid results.
+			if err == nil {
+				indexesQueryResults <- indexQueryResult
+			}
+			wg.Done()
+		}(term)
+	}
+
+	go func() {
+		wg.Wait()
+		done <- true
+	}()
+
+	// Process all the results coming from the indexes queries and cleanup when they're all done.
+P:
+	for {
+		select {
+		// Clean channels and finish the loop if there's no more index requests to process.
+		case <-done:
+			close(done)
+			close(indexesQueryResults)
+			break P
+		case indexQueryResult := <-indexesQueryResults:
+			for _, match := range indexQueryResult {
+				switch joinMethod {
+				// Only add the record to the results on its first match.
+				case api.SearchJoinMethodOR:
+					if foundRecordsCounts[match] == 0 {
+						foundRecordsCounts[match] = 1
+						results = append(results, match)
+					}
+				// Only add the record to the results if its been matched in all term searches.
+				case api.SearchJoinMethodAND:
+					foundRecordsCounts[match] += 1
+					if foundRecordsCounts[match] == len(terms) {
+						results = append(results, match)
+					}
+				}
+			}
 		}
 	}
+
 	return results, nil
 }
