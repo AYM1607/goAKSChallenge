@@ -14,8 +14,11 @@ import (
 
 const searchErrString = "search request could not be completed due to an internal error"
 
-func New(addr string) *http.Server {
-	handler := newHandler()
+func New(addr string) (*http.Server, error) {
+	handler, err := newHandler()
+	if err != nil {
+		return nil, err
+	}
 
 	r := mux.NewRouter()
 
@@ -29,17 +32,22 @@ func New(addr string) *http.Server {
 	return &http.Server{
 		Addr:    addr,
 		Handler: r,
-	}
+	}, nil
 }
 
 type handler struct {
 	Store *store.Store
 }
 
-func newHandler() *handler {
-	return &handler{
-		Store: store.New(),
+func newHandler() (*handler, error) {
+	store, err := store.New()
+	if err != nil {
+		return nil, err
 	}
+
+	return &handler{
+		Store: store,
+	}, nil
 }
 
 type CreateRequest struct {

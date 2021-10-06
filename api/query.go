@@ -16,6 +16,7 @@ const (
 	SearchFieldWebsite         = "website"
 	SearchFieldSource          = "source"
 	SearchFieldLicense         = "license"
+	SearchFieldDescription     = "description"
 
 	// Join method enum values.
 	SearchJoinMethodAND = "and"
@@ -26,6 +27,9 @@ const (
 // TODO: Consider alternative ways of parsing and validating search parameters.
 
 // IsValid determines if the instace of SearchField is one of the valid enum values.
+// NOTE: This implementation is not ideal because a bug could be introduced
+// if a new value is introduced and it is not added to this function.
+// This is a workaround to the lack of enums in go.
 func (f SearchField) IsValid() error {
 	switch f {
 	case SearchFieldCompany,
@@ -35,13 +39,17 @@ func (f SearchField) IsValid() error {
 		SearchFieldSource,
 		SearchFieldTitle,
 		SearchFieldVersion,
-		SearchFieldWebsite:
+		SearchFieldWebsite,
+		SearchFieldDescription:
 		return nil
 	}
 	return errors.New("invalid search field type")
 }
 
 // IsValid determines if the instance of SearchJoinMethod is one of the valid enum values.
+// NOTE: This implementation is not ideal because a bug could be introduced
+// if a new value is introduced and it is not added to this function.
+// This is a workaround to the lack of enums in go.
 func (jm SearchJoinMethod) IsValid() error {
 	switch jm {
 	case SearchJoinMethodAND, SearchJoinMethodOR:

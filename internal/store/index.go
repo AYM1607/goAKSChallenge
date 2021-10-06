@@ -1,8 +1,12 @@
 package store
 
 import (
+	"math/rand"
+	"time"
+
 	"github.com/AYM1607/goAKSChallenge/api"
 	"github.com/blevesearch/bleve/v2"
+	"github.com/oklog/ulid/v2"
 )
 
 type storeIndex interface {
@@ -10,7 +14,7 @@ type storeIndex interface {
 	Search(string) ([]*api.MetaRecord, error)
 }
 
-func newIndex(name string, isFullText bool) (storeIndex, error) {
+func newIndex(isFullText bool) (storeIndex, error) {
 	if isFullText {
 		// Create bleve index.
 		mapping := bleve.NewIndexMapping()
@@ -19,7 +23,11 @@ func newIndex(name string, isFullText bool) (storeIndex, error) {
 			return nil, err
 		}
 
-		index := fullTextSearchIndex{name: name, bleveIndex: bleveIndex}
+		index := fullTextSearchIndex{
+			bleveIndex: bleveIndex,
+			idMap:      map[string]*api.MetaRecord{},
+		}
+
 		return &index, nil
 	}
 	// TODO: return the implementation of the ExactMatchSearchIndex
@@ -29,23 +37,52 @@ func newIndex(name string, isFullText bool) (storeIndex, error) {
 
 // NOTE: Implementig a full text search would have been too much work for the purposes
 // of this challenge but I still wanted to have the feature available for the description field.
-// The bleve library is probably too overkill but this purpose, but once again, I just wanted
+// The bleve library is probably too overkill for this purpose, but once again, I just wanted
 // to add the feature regardless of the size of the final binary. Further optimizations
 // could be possible if we narrowed the requirements for the search.
 type fullTextSearchIndex struct {
 	name       string
 	bleveIndex bleve.Index
-	mapping    map[string]*api.MetaRecord
+	idMap      map[string]*api.MetaRecord
 }
 
-func (i fullTextSearchIndex) Index(*api.MetaRecord, string) error {
-	// TODO: since bleve only accepts strings as identifiers we have to have an
-	// internal mapping from a UID (can be ULID) to the pointer intself.
+func (i fullTextSearchIndex) Index(record *api.MetaRecord, data string) error {
+	// Create a string parsable UID for the record.
+	// This is necessary because bleve only accepts strings as document identifiers.
+	t := time.Now()
+	entropy := ulid.Monotonic(rand.New(rand.NewSource(t.UnixNano())), 0)
+	recordId, err := ulid.New(ulid.Timestamp(t), entropy)
+
+	if err != nil {
+		return err
+	}
+
+	i.idMap[recordId.String()] = record
+	err = i.bleveIndex.Index(recordId.String(), data)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
-func (i fullTextSearchIndex) Search(string) ([]*api.MetaRecord, error) {
-	return nil, nil
+func (i fullTextSearchIndex) Search(term string) ([]*api.MetaRecord, error) {
+	// Retireve the internal ids for the records from the bleve index.
+	query := bleve.NewMatchQuery(term)
+	search := bleve.NewSearchRequest(query)
+	searchResults, err := i.bleveIndex.Search(search)
+	if err != nil {
+		return nil, err
+	}
+
+	resultRecords := []*api.MetaRecord{}
+
+	// Convert from bleve ids to MetaRecord pointers.
+	// NOTE: This is linear and could perform poorly when the number of results is high.
+	for _, match := range searchResults.Hits {
+		resultRecords = append(resultRecords, i.idMap[match.ID])
+	}
+	return resultRecords, nil
 }
 
 // Implement an exact match index with a trie.

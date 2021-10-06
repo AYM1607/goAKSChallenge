@@ -7,6 +7,7 @@ require (
 	github.com/go-playground/validator/v10 v10.9.0
 	github.com/goccy/go-yaml v1.9.3
 	github.com/gorilla/mux v1.8.0
+	github.com/oklog/ulid/v2 v2.0.2
 	github.com/stretchr/testify v1.7.0
 )
 
