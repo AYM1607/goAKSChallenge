@@ -16,7 +16,6 @@ type storeIndex interface {
 
 func newIndex(isFullText bool) (storeIndex, error) {
 	if isFullText {
-		// Create bleve index.
 		mapping := bleve.NewIndexMapping()
 		bleveIndex, err := bleve.NewMemOnly(mapping)
 		if err != nil {
@@ -30,8 +29,9 @@ func newIndex(isFullText bool) (storeIndex, error) {
 
 		return &index, nil
 	}
-	// TODO: return the implementation of the ExactMatchSearchIndex
-	return nil, nil
+	return exactMatchSearchIndex{
+		mapping: map[string][]*api.MetaRecord{},
+	}, nil
 
 }
 
@@ -85,6 +85,16 @@ func (i fullTextSearchIndex) Search(term string) ([]*api.MetaRecord, error) {
 	return resultRecords, nil
 }
 
-// Implement an exact match index with a trie.
+// Implement an exact match index a map.
 type exactMatchSearchIndex struct {
+	mapping map[string][]*api.MetaRecord
+}
+
+func (i exactMatchSearchIndex) Index(record *api.MetaRecord, data string) error {
+	i.mapping[data] = append(i.mapping[data], record)
+	return nil
+}
+
+func (i exactMatchSearchIndex) Search(term string) ([]*api.MetaRecord, error) {
+	return i.mapping[term], nil
 }

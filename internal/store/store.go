@@ -14,19 +14,27 @@ var ErrUnparsable = errors.New("could not parse input into a record")
 type Store struct {
 	// Use a read/write mutex to allow performant concurrent reads.
 	mu      sync.RWMutex
-	records []*api.MetaRecord
 	indexes map[api.SearchField]storeIndex
 }
 
 func New() (*Store, error) {
+	// Create indexes for every possible search field.
 	indexes := map[api.SearchField]storeIndex{}
-	// TODO: Create the indexes for the rest of the fields.
-	index, err := newIndex(true)
-	if err != nil {
-		return nil, err
+	for _, searchField := range api.ValidSearchFieldValues() {
+		isFullText := false
+		if searchField == api.SearchFieldDescription {
+			isFullText = true
+		}
+		index, err := newIndex(isFullText)
+		// If any of the indexes failes to be initialized the store won't work
+		// correctly and thus we should abort the whole operation.
+		if err != nil {
+			return nil, err
+		}
+		indexes[searchField] = index
 	}
-	indexes[api.SearchFieldDescription] = index
-	return &Store{indexes: indexes}, err
+
+	return &Store{indexes: indexes}, nil
 }
 
 func (s *Store) Append(rawRecord []byte) error {
@@ -38,10 +46,37 @@ func (s *Store) Append(rawRecord []byte) error {
 		return err
 	}
 
-	// TODO: When we make use of indexes they'll have to be updated here.
-	s.indexes[api.SearchFieldDescription].Index(record, record.Description)
+	for _, field := range api.ValidSearchFieldValues() {
+		if field == api.SearchFieldMaintainerEmail ||
+			field == api.SearchFieldMaintainerName {
+			continue
+		}
+		fieldValue, err := record.FieldValueFromSearchField(field)
+		// This should not happend because we're skipping the invalid fields
+		// but I'm leaving it as a safeguard.
+		if err != nil {
+			return err
+		}
+		// If we fail to add the record to any index searches won't work correclty so abort the whole operation.
+		err = s.indexes[field].Index(record, fieldValue)
+		if err != nil {
+			return err
+		}
+	}
 
-	s.records = append(s.records, record)
+	// Since maintainers is a list it needs a separate implementation.
+	for _, maintainer := range record.Maintainers {
+		// If we fail to add the record to the maintainer fields indexes searches won't work correctly so we should abort.
+		err := s.indexes[api.SearchFieldMaintainerEmail].Index(record, maintainer.Email)
+		if err != nil {
+			return err
+		}
+		err = s.indexes[api.SearchFieldMaintainerName].Index(record, maintainer.Name)
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -55,7 +90,8 @@ func (s *Store) Search(joinMethod api.SearchJoinMethod,
 	}
 
 	results := []*api.MetaRecord{}
-	// TODO: query all the indexes.
+	// TODO: deduplicate for "or" join method and ensure that a result is returned
+	// for each of the terms in the case of the "and" join method.
 	for _, term := range terms {
 		// TODO: this searches should be performed concurrently.
 		// Skipping indexes for fields other than description for now.

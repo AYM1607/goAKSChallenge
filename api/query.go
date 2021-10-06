@@ -46,6 +46,24 @@ func (f SearchField) IsValid() error {
 	return errors.New("invalid search field type")
 }
 
+// ValidSearchFieldValues returns all the valid values a SearchField can take.
+// NOTE: This implementation is not ideal because a bug could be introduced
+// if a new value is introduced and it is not added to this function.
+// This is a workaround to the lack of enums in go.
+func ValidSearchFieldValues() []SearchField {
+	return []SearchField{
+		SearchFieldTitle,
+		SearchFieldVersion,
+		SearchFieldMaintainerEmail,
+		SearchFieldMaintainerName,
+		SearchFieldCompany,
+		SearchFieldWebsite,
+		SearchFieldSource,
+		SearchFieldLicense,
+		SearchFieldDescription,
+	}
+}
+
 // IsValid determines if the instance of SearchJoinMethod is one of the valid enum values.
 // NOTE: This implementation is not ideal because a bug could be introduced
 // if a new value is introduced and it is not added to this function.
