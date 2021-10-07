@@ -14,20 +14,11 @@ import (
 
 const searchErrString = "search request could not be completed due to an internal error"
 
-func New(addr string) (*http.Server, error) {
-	handler, err := newHandler()
+func NewServer(addr string) (*http.Server, error) {
+	r, err := NewHTTPHandler()
 	if err != nil {
 		return nil, err
 	}
-
-	r := mux.NewRouter()
-
-	r.HandleFunc("/records", handler.handleCreate).Methods("POST")
-	// We could debate using POST or GET for a search endpoint. For this challenge I'll prioritize ease of parsing.
-	// Since the GET verb does not support a body, we would need to parse search terms from the URL.
-	// If the requirements mentioned compatibility with browsers or ease of query sharing the effort of using
-	// query string params would be justified.
-	r.HandleFunc("/records/search", handler.handleSearch).Methods("POST")
 
 	return &http.Server{
 		Addr:    addr,
@@ -39,15 +30,26 @@ type handler struct {
 	Store *store.Store
 }
 
-func newHandler() (*handler, error) {
+func NewHTTPHandler() (http.Handler, error) {
 	store, err := store.New()
 	if err != nil {
 		return nil, err
 	}
 
-	return &handler{
+	handler := handler{
 		Store: store,
-	}, nil
+	}
+
+	r := mux.NewRouter()
+
+	r.HandleFunc("/records", handler.handleCreate).Methods("POST")
+	// We could debate using POST or GET for a search endpoint. For this challenge I'll prioritize ease of parsing.
+	// Since the GET verb does not support a body, we would need to parse search terms from the URL.
+	// If the requirements mentioned compatibility with browsers or ease of query sharing the effort of using
+	// query string params would be justified.
+	r.HandleFunc("/records/search", handler.handleSearch).Methods("POST")
+
+	return r, nil
 }
 
 type CreateRequest struct {
@@ -137,7 +139,9 @@ func (h *handler) handleSearch(w http.ResponseWriter, r *http.Request) {
 	rawRecords := []string{}
 	for _, record := range records {
 
-		rawRecord, err := yaml.Marshal(record)
+		// If this option is not used, the indentation of sequences does not match
+		// the original file and thus tests fail.
+		rawRecord, err := yaml.MarshalWithOptions(record, yaml.IndentSequence(true))
 		// Since all records where unmarshalled from valid yaml this should not
 		// happen but leaving it as a safeguard.
 		if err != nil {

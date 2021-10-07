@@ -7,7 +7,7 @@ import (
 )
 
 func main() {
-	srvr, err := server.New(":8888")
+	srvr, err := server.NewServer(":8888")
 	if err != nil {
 		log.Fatal("Server could not be created")
 	}

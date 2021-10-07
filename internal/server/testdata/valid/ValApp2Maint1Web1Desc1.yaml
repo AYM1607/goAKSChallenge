@@ -1,0 +1,10 @@
+title: Valid App 2
+version: 1.0.1
+maintainers:
+  - name: Maintainer One
+    email: man1@mail.com
+company: Upbound Inc.
+website: https://website1.io
+source: https://github.com/upbound/repo
+license: Apache-2.0
+description: This is description oneForTesting
