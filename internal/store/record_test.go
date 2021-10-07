@@ -10,9 +10,9 @@ import (
 )
 
 var (
-	invalidDir       = "./testData/invalid"
-	invalidSchemaDir = "./testData/invalidSchema"
-	validDir         = "./testData/valid"
+	invalidDir       = "testdata/invalid"
+	invalidSchemaDir = "testdata/invalidSchema"
+	validDir         = "testdata/valid"
 )
 
 // TODO: Convert this set of tests to a table test to delete dupe code.

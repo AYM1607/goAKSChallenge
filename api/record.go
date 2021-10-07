@@ -35,7 +35,6 @@ func (r *MetaRecord) FieldValueFromSearchField(field SearchField) (string, error
 	case SearchFieldLicense:
 		return r.License, nil
 	case SearchFieldMaintainerEmail:
-		// There's no direct mapping, the best we can do is return
 		return "", ErrFieldLookupNotSupported
 	case SearchFieldMaintainerName:
 		return "", ErrFieldLookupNotSupported
