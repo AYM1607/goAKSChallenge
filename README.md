@@ -109,8 +109,8 @@ description: |
 
 Since the description was intentionally vague, I took the time to define some constraints that would allow for a clearer direction while implementing the code and also while testing. The following assumptions are true for this solution:
 - All the requests are performed using JSON. The yaml that represents the metadata is always transferred encoded as a string.
-- All the fields are searchable individually but join queries can be used to be more granular.
-- All fields are indexed as an exact match, meaning that the exact field value must be provided for it to be returned. The exception is the description which is indexed for full text search and thus the queries can be more flexible.
+- All the fields are searchable individually and join queries can be used to be more granular.
+- All fields are indexed as an exact match, meaning that the exact field value must be provided for its corresponding record to be returned. The exception is the description field which is indexed for full text search and thus the queries can be more flexible.
 - Most of the internal apis have to be tested with unit tests.
 - Due to the amount of search combinations and request validations, integration teststing is helpful and thus a set of them is included.
 
@@ -156,12 +156,12 @@ As mentioned previously, only description supports full text search but can be c
 
 #### Architecture
 
-All of the fields are indexed separately. An internal index interface has implementation for both exact match and fts indexing:
+All of the fields are indexed separately. An internal index interface has implementations for both exact match and fts indexing:
 - The exact match implementation uses a simple golang map.
-- The fts implementation uses the bleve library, which is overkill for this purpose but I really wanted to have fts at least for the description field. If more constraints/requirements were specified I could've converged to a more efficient implementation.
+- The fts implementation uses the bleve library, which is overkill for this purpose but I really wanted to have fts at least for the description field.
 
 When a request to add a new record is received, the server populates all of the indexes with the record data and fails if any of the fields are not indexed successfully.
-When a request to search for records is received, all the indexes are queried concurrently and the results are merged afterwards depending on the join method.
+When a request to search for records is received, all the indexes are queried concurrently and the results are merged afterwards depending on the join method. If a single index query fails, it doesn't fail the whole request.
 The requests are protected by a RW lock thus, multiple concurrent reads are performant but we're still protected against race conditions.
 
 #### Testing
@@ -177,9 +177,9 @@ Valid make commands:
 
 #### Areas of improvement
 
-This list of things were not included due to lack of time but would be nice to haves:
+This list of things were not included due to lack of time but would be nice to have:
 - More efficient indexing: there are some parts of the algorith that are linear in time complexity and could cause problems if the queries get too large.
 - More robust concurrent search: The current implementation uses a single unbuffered channel that could be causing a bottleneck. I didn't profile the code but If I were to do so I could put together a different and more efficient concurrent appraoch.
-- More robust testing for invalid inputs: While I do tests for missing and invalid inputs in the yaml documents, I would like for the errors to be more robuts. While I do return a string that ends up in the API response and indicates what fields are missing/invalid, this is not easily testable. A custom error that contains the fields would allow better tests.
-- Interact with env vars for server customization.
+- More robust testing for invalid inputs: While I do tests for missing and invalid inputs in the yaml documents, I would like for the errors to be more robuts. I do return a string that ends up in the API response and indicates what fields are missing/invalid, this is not easily testable. A custom error that contains the fields would allow better tests.
+- Interact with env vars for server configuration.
 
