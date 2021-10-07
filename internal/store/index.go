@@ -1,6 +1,7 @@
 package store
 
 import (
+	"errors"
 	"math/rand"
 	"time"
 
@@ -47,6 +48,12 @@ type fullTextSearchIndex struct {
 }
 
 func (i fullTextSearchIndex) Index(record *api.MetaRecord, data string) error {
+	if record == nil {
+		return errors.New("must pass a valid pointer")
+	}
+	if data == "" {
+		return errors.New("cannot index a record with empty data")
+	}
 	// Create a string parsable UID for the record.
 	// This is necessary because bleve only accepts strings as document identifiers.
 	t := time.Now()
@@ -67,6 +74,9 @@ func (i fullTextSearchIndex) Index(record *api.MetaRecord, data string) error {
 }
 
 func (i fullTextSearchIndex) Search(term string) ([]*api.MetaRecord, error) {
+	if term == "" {
+		return nil, errors.New("must provide a valid search term")
+	}
 	// Retireve the internal ids for the records from the bleve index.
 	query := bleve.NewMatchQuery(term)
 	search := bleve.NewSearchRequest(query)
@@ -91,10 +101,19 @@ type exactMatchSearchIndex struct {
 }
 
 func (i exactMatchSearchIndex) Index(record *api.MetaRecord, data string) error {
+	if record == nil {
+		return errors.New("must pass a valid pointer")
+	}
+	if data == "" {
+		return errors.New("cannot index a record with empty data")
+	}
 	i.mapping[data] = append(i.mapping[data], record)
 	return nil
 }
 
 func (i exactMatchSearchIndex) Search(term string) ([]*api.MetaRecord, error) {
+	if term == "" {
+		return nil, errors.New("must provide a valid search term")
+	}
 	return i.mapping[term], nil
 }
