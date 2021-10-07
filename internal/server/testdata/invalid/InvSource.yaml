@@ -1,0 +1,12 @@
+title: Valid App 2
+version: 1.0.1
+maintainers:
+  - name: AppTwo Maintainer
+    email: apptwo@hotmail.com
+company: Upbound Inc.
+website: https://upbound.io
+source: Clearly not a source site
+license: Apache-2.0
+description: |
+  ### Why app 2 is the best
+  Because it simply is...

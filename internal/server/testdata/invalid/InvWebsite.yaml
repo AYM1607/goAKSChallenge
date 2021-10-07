@@ -1,0 +1,14 @@
+title: Some app
+version: 1.0.1
+maintainers:
+  - name: first last
+    email: email@hotmail.com
+  - name: first last
+    email: email@gmail.com
+company: Some company
+website: Clearly not a website
+source: https://github.com/company/repo
+license: Apache-2.0
+description: |
+  ### blob of markdown
+  More markdown
